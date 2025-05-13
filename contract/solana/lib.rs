@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 use std::str::FromStr;
 
-declare_id!("EjgUokcXUS6MPvBMVMLxeMdBsbfo2oFozvJqR1prjMo");
+declare_id!("E85PHXXkTgf9YjzNM3Wh9xKysWNx6hJKbwc7y9EuGxBh");
 
 #[program]
 pub mod unitpay_settlement {
