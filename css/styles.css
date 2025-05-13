@@ -1,0 +1,294 @@
+/* 通知消息容器 */
+.notifications-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 350px;
+}
+
+/* 通知样式 */
+.notification {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background-color: #fff;
+  animation: slide-in 0.3s ease-out forwards;
+  overflow: hidden;
+}
+
+.notification.fade-out {
+  animation: fade-out 0.5s ease-out forwards;
+}
+
+/* 通知类型样式 */
+.notification-info {
+  border-left: 4px solid #3498db;
+}
+
+.notification-success {
+  border-left: 4px solid #2ecc71;
+}
+
+.notification-warning {
+  border-left: 4px solid #f39c12;
+}
+
+.notification-error {
+  border-left: 4px solid #e74c3c;
+}
+
+/* 通知图标 */
+.notification-icon {
+  margin-right: 12px;
+  font-size: 18px;
+}
+
+.notification-info .notification-icon {
+  color: #3498db;
+}
+
+.notification-success .notification-icon {
+  color: #2ecc71;
+}
+
+.notification-warning .notification-icon {
+  color: #f39c12;
+}
+
+.notification-error .notification-icon {
+  color: #e74c3c;
+}
+
+/* 通知消息 */
+.notification-message {
+  flex: 1;
+  font-size: 14px;
+  color: #333;
+}
+
+/* 关闭按钮 */
+.notification-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  margin-left: 8px;
+  color: #999;
+  font-size: 14px;
+}
+
+.notification-close:hover {
+  color: #555;
+}
+
+/* 动画 */
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Payment List Styles */
+.payment-list {
+  margin: 20px 0;
+}
+
+.payment-item {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+}
+
+.payment-item:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.payment-header {
+  border-bottom: 1px solid #eee;
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+}
+
+.payment-title {
+  margin: 0;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.payment-details {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.payment-details p {
+  margin-bottom: 8px;
+}
+
+.payment-details strong {
+  color: #333;
+}
+
+.payment-actions {
+  text-align: right;
+}
+
+/* Badge Styles */
+.badge {
+  padding: 6px 12px;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.badge-primary {
+  background-color: #007bff;
+}
+
+.badge-secondary {
+  background-color: #6c757d;
+}
+
+.badge-success {
+  background-color: #28a745;
+}
+
+.badge-danger {
+  background-color: #dc3545;
+}
+
+.badge-warning {
+  background-color: #ffc107;
+  color: #000;
+}
+
+.badge-info {
+  background-color: #17a2b8;
+}
+
+/* Link Styles */
+.text-break {
+  word-break: break-all;
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+/* Payment Form Styles */
+.payment-form {
+  max-width: 600px;
+  margin: 20px auto;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.payment-form .form-group {
+  margin-bottom: 20px;
+}
+
+.payment-form label {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.payment-form label::after {
+  content: " *";
+  color: #dc3545;
+  display: none;
+}
+
+.payment-form label[for="description"]::after,
+.payment-form label[for="fee-rate"]::after {
+  display: none;
+}
+
+.payment-form label[for="user-wallet"]::after,
+.payment-form label[for="lp-select"]::after,
+.payment-form label[for="amount"]::after,
+.payment-form label[for="payment-platform"]::after {
+  display: inline;
+}
+
+.payment-form .input-group-text {
+  background-color: #f8f9fa;
+  color: #495057;
+  border-left: none;
+}
+
+.payment-form .form-control:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+.payment-form .form-actions {
+  margin-top: 30px;
+  text-align: right;
+}
+
+.payment-form .btn {
+  padding: 8px 20px;
+  margin-left: 10px;
+}
+
+.loading-indicator {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.loading-indicator .spinner-border {
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 10px;
+}
+
+.loading-text {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.alert {
+  margin-top: 20px;
+  padding: 15px;
+  border-radius: 4px;
+  display: none;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+} 

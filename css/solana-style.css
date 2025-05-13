@@ -1,0 +1,207 @@
+/**
+ * Solana 相关样式
+ */
+
+/* Phantom钱包按钮样式 */
+.phantom-btn {
+  background-color: #8A2BE2;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.phantom-btn::before {
+  content: '';
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDgiIGhlaWdodD0iMTA4IiB2aWV3Qm94PSIwIDAgMTA4IDEwOCIgZmlsbD0ibm9uZSI+CjxyZWN0IHdpZHRoPSIxMDgiIGhlaWdodD0iMTA4IiByeD0iMjYiIGZpbGw9IiNBQjlGRjIiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik00Ni41MjY1IDY5Ljk1MjlDNDIuMTk5NCA3MS4wNTg5IDM3LjE2NCA2OS41NzA2IDM0LjQ2NCA2NS4yODI2QzMwLjgzNjIgNTkuNDk0MSAzMy42NTgyIDUxLjgzNzkgMzkuOTU1OCA0OC43MzQ4QzQ0LjI4MyA0Ny42MjI5IDQ5LjMxODMgNDkuMTExMSA1Mi4wMTgzIDUzLjM5OTJDNTUuNjQ2MSA1OS4xODc2IDUyLjgyNTkgNjYuODQzOSA0Ni41MjY1IDY5Ljk1MjlaTTY3LjQyNjggNjUuOTk2OEM2NS41MzM0IDY1Ljk5NjggNjQuMDAwMiA2NC40NjM1IDY0LjAwMDIgNjIuNTcwMUM2NC4wMDAyIDYwLjY3NjcgNjUuNTMzNCA1OS4xNDM1IDY3LjQyNjggNTkuMTQzNUM2OS4zMjAzIDU5LjE0MzUgNzAuODUzNSA2MC42NzY3IDcwLjg1MzUgNjIuNTcwMUM3MC44NTM1IDY0LjQ2MzUgNjkuMzIwMyA2NS45OTY4IDY3LjQyNjggNjUuOTk2OFpNNzUuNDYzNSA1My4xNDM1Qzc0LjI4MzUgNTMuMTQzNSA3My4zMjAyIDUyLjE4MDIgNzMuMzIwMiA1MS4wMDAyQzczLjMyMDIgNDkuODIwMSA3NC4yODM1IDQ4Ljg1NjggNzUuNDYzNSA0OC44NTY4Qzc2LjY0MzYgNDguODU2OCA3Ny42MDY5IDQ5LjgyMDEgNzcuNjA2OSA1MS4wMDAyQzc3LjYwNjkgNTIuMTgwMiA3Ni42NDM2IDUzLjE0MzUgNzUuNDYzNSA1My4xNDM1Wk04MS45OTk0IDYyLjEwNzZDODAuODE5NCA2Mi4xMDc2IDc5Ljg1NiA2MS4xNDQzIDc5Ljg1NiA1OS45NjQzQzc5Ljg1NiA1OC43ODQyIDgwLjgxOTQgNTcuODIwOSA4MS45OTk0IDU3LjgyMDlDODMuMTc5NSA1Ny44MjA5IDg0LjE0MjggNTguNzg0MiA4NC4xNDI4IDU5Ljk2NDNDODQuMTQyOCA2MS4xNDQzIDgzLjE3OTUgNjIuMTA3NiA4MS45OTk0IDYyLjEwNzZaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K');
+  background-size: cover;
+}
+
+.phantom-btn.connected::before {
+  background-color: #4CAF50;
+  border-radius: 50%;
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+}
+
+.phantom-btn:hover {
+  background-color: #7B3FE4;
+}
+
+.phantom-btn:disabled {
+  background-color: #9945FF;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* 网络选择器样式 */
+.network-selector {
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background-color: #f8f9fa;
+  border-radius: 0.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.network-selector-title {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.network-options {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.network-option {
+  flex: 1;
+  padding: 10px;
+  text-align: center;
+  border: 1px solid #dee2e6;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  color: #495057;
+  user-select: none;
+}
+
+.network-option:hover {
+  background-color: #f1f3f5;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transform: translateY(-1px);
+}
+
+.network-option:active {
+  background-color: #e9ecef;
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.network-option.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #0069d9;
+}
+
+.network-option.ethereum {
+  border-left: 3px solid #3498db;
+}
+
+.network-option.solana {
+  border-left: 3px solid #9945FF;
+}
+
+/* 网络标识 */
+.network-badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 1rem;
+  margin-left: 0.5rem;
+  font-weight: 500;
+}
+
+.network-badge.ethereum {
+  background-color: rgba(52, 152, 219, 0.1);
+  color: #3498db;
+  border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+.network-badge.solana {
+  background-color: rgba(153, 69, 255, 0.1);
+  color: #9945FF;
+  border: 1px solid rgba(153, 69, 255, 0.3);
+}
+
+/* 钱包连接区域样式 */
+.wallet-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 1rem;
+  justify-content: center;
+}
+
+/* Solana余额显示 */
+.sol-balance {
+  display: flex;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.sol-balance-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  background-color: #9945FF;
+  border-radius: 50%;
+}
+
+.sol-balance-value {
+  font-weight: 500;
+}
+
+/* 钱包选择下拉菜单 */
+.wallet-selector {
+  position: relative;
+  display: inline-block;
+}
+
+.wallet-dropdown {
+  display: none;
+  position: absolute;
+  min-width: 200px;
+  z-index: 1000;
+  background-color: #fff;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.wallet-selector:hover .wallet-dropdown,
+.wallet-dropdown:hover {
+  display: block;
+}
+
+.wallet-option {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.wallet-option:hover {
+  background-color: #f8f9fa;
+}
+
+.wallet-option img,
+.wallet-option .wallet-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 12px;
+}
+
+/* 适配移动设备 */
+@media (max-width: 576px) {
+  .wallet-buttons {
+    flex-direction: column;
+  }
+  
+  .network-options {
+    flex-direction: column;
+  }
+} 
