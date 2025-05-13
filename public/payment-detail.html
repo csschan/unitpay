@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>支付详情 - UnitPay</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.7.4/dist/web3.min.js"></script>
+    <!-- PayPal JavaScript SDK -->
+    <script>
+        // Fetch PayPal client ID from server
+        fetch('/api/payment/paypal/config')
+            .then(response => response.json())
+            .then(config => {
+                const script = document.createElement('script');
+                script.src = `https://www.paypal.com/sdk/js?client-id=${config.clientId}&currency=USD`;
+                document.head.appendChild(script);
+            })
+            .catch(error => console.error('Failed to load PayPal SDK:', error));
+    </script>
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            padding: 20px;
+        }
+        .payment-info {
+            margin-top: 20px;
+        }
+        .info-row {
+            display: flex;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-row label {
+            font-weight: bold;
+            width: 150px;
+            flex-shrink: 0;
+        }
+        .wallet-status {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        #wallet-connected {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        #wallet-address {
+            background-color: #f5f5f5;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-family: monospace;
+        }
+        #usdt-balance {
+            background-color: #eef8ff;
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: #0077cc;
+            font-weight: bold;
+        }
+        .option-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .tab-btn.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #0056b3;
+        }
+        .settlement-form {
+            padding: 15px 0;
+        }
+        .blockchain-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .step {
+            display: flex;
+            align-items: flex-start;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .step-number {
+            width: 30px;
+            height: 30px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        .step-content {
+            flex-grow: 1;
+        }
+        .step-content h3 {
+            margin-top: 0;
+            margin-bottom: 5px;
+        }
+        .step-status {
+            margin-top: 10px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            display: inline-block;
+            font-size: 14px;
+        }
+        .step-status.pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .step-status.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .step-status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .blockchain-result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #d1e7dd;
+            border-radius: 8px;
+            background-color: #f8fff9;
+        }
+        .success-message {
+            text-align: center;
+            padding: 30px;
+        }
+        .success-icon {
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+        .hidden {
+            display: none;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover:not(:disabled) {
+            background-color: #545b62;
+        }
+        .error-message {
+            color: #dc3545;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 15px;
+        }
+        
+        /* PayPal支付样式 */
+        #paypal-checkout-container {
+            margin-top: 20px;
+        }
+        
+        .payment-steps {
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .payment-steps h4 {
+            margin-top: 0;
+            color: #0070ba; /* PayPal蓝色 */
+        }
+        
+        .payment-steps ol {
+            margin-bottom: 20px;
+        }
+        
+        .payment-steps li {
+            margin-bottom: 10px;
+        }
+        
+        .payment-status-waiting {
+            text-align: center;
+            padding: 30px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .payment-capture-form {
+            text-align: center;
+            padding: 30px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .payment-success {
+            text-align: center;
+            padding: 30px;
+            background-color: #f0fff0;
+            border-radius: 8px;
+            border: 1px solid #d7e9d7;
+        }
+        
+        .success-icon {
+            width: 60px;
+            height: 60px;
+            background-color: #28a745;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            margin: 0 auto 20px auto;
+        }
+        
+        .btn-paypal {
+            background-color: #0070ba;
+            color: white;
+        }
+        
+        .btn-paypal:hover {
+            background-color: #005ea6;
+        }
+        
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            margin-bottom: 20px;
+        }
+        
+        /* 支付取消样式 */
+        .cancelled-message {
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .cancelled-icon {
+            color: #e74c3c;
+            margin-bottom: 20px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>支付详情</h1>
+            <div id="wallet-status" class="wallet-status">
+                <button id="connect-wallet" class="btn btn-primary">连接钱包</button>
+                <div id="wallet-connected" class="hidden">
+                    <span id="wallet-address">未连接</span>
+                    <span id="usdt-balance">USDT: 0.00</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="card" id="payment-details">
+            <h2>支付信息</h2>
+            <div class="payment-info">
+                <div class="info-row">
+                    <label>支付ID：</label>
+                    <span id="payment-id">加载中...</span>
+                </div>
+                <div class="info-row">
+                    <label>金额：</label>
+                    <span id="payment-amount">加载中...</span>
+                </div>
+                <div class="info-row">
+                    <label>状态：</label>
+                    <span id="payment-status">加载中...</span>
+                </div>
+                <div class="info-row">
+                    <label>LP地址：</label>
+                    <span id="lp-address">加载中...</span>
+                </div>
+                <div class="info-row" id="merchant-email-container" style="display: none;">
+                    <label>商家PayPal邮箱：</label>
+                    <span id="merchant-paypal-email">-</span>
+                </div>
+                <div class="info-row">
+                    <label>创建时间：</label>
+                    <span id="created-at">加载中...</span>
+                </div>
+            </div>
+            
+            <!-- 退款按钮 -->
+            <div id="refund-button-container" class="mt-3" style="display: none;">
+                <button id="refund-button" class="btn btn-warning">申请退款</button>
+            </div>
+            
+            <!-- 错误详情 -->
+            <div id="error-details-container" class="mt-3" style="display: none;">
+                <h3>错误详情</h3>
+                <div class="error-details">
+                    <div class="info-row">
+                        <label>错误消息：</label>
+                        <span id="error-message">-</span>
+                    </div>
+                    <div class="info-row">
+                        <label>错误代码：</label>
+                        <span id="error-code">-</span>
+                    </div>
+                    <div class="info-row">
+                        <label>错误时间：</label>
+                        <span id="error-time">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" id="payment-options">
+            <h2>选择结算方式</h2>
+            <div class="option-tabs">
+                <button id="tab-api" class="tab-btn active">API结算</button>
+                <button id="tab-blockchain" class="tab-btn">区块链结算</button>
+            </div>
+            
+            <!-- API结算表单 -->
+            <div id="api-settlement" class="settlement-form">
+                <p>通过我们的标准API服务完成支付</p>
+                <form id="payment-form">
+                    <div class="form-group">
+                        <label for="payment-method">支付方式</label>
+                        <select id="payment-method" required>
+                            <option value="">选择支付方式</option>
+                            <option value="paypal">PayPal</option>
+                            <option value="alipay">支付宝</option>
+                            <option value="wechat">微信支付</option>
+                            <option value="bank">银行转账</option>
+                        </select>
+                    </div>
+                    <div id="payment-proof-container" class="form-group">
+                        <label for="payment-proof">支付凭证</label>
+                        <input type="text" id="payment-proof" placeholder="交易ID或截图URL" required>
+                    </div>
+                    <div id="paypal-button-container" class="form-group" style="display: none;">
+                        <p>点击下方按钮使用PayPal支付</p>
+                        <!-- PayPal按钮将在这里渲染 -->
+                        <div id="paypal-button-placeholder"></div>
+                        
+                        <div class="sandbox-info mt-3">
+                            <div class="alert alert-info">
+                                <h5>PayPal沙盒测试账户</h5>
+                                <p>这是测试环境，请使用以下账户进行支付测试:</p>
+                                <div class="mb-2">
+                                    <strong>买家账户:</strong><br>
+                                    邮箱: sb-zs9v8j29741747@personal.example.com<br>
+                                    密码: unitpay123
+                                </div>
+                                <div>
+                                    <strong>卖家账户:</strong><br>
+                                    邮箱: sb-o3jcs29741632@business.example.com<br>
+                                    密码: unitpay123
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" id="submit-payment" class="btn btn-primary">提交支付</button>
+                </form>
+            </div>
+            
+            <!-- 区块链结算表单 -->
+            <div id="blockchain-settlement" class="settlement-form hidden">
+                <p>使用USDT直接在区块链上结算支付</p>
+                <div class="blockchain-steps">
+                    <div class="step" id="step-connect">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3>连接钱包</h3>
+                            <p>连接您的钱包以与区块链交互</p>
+                            <div id="step1-status" class="step-status pending">未连接</div>
+                        </div>
+                    </div>
+                    <div class="step" id="step-approve">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3>授权USDT</h3>
+                            <p>授权合约使用您的USDT代币</p>
+                            <button id="approve-usdt" class="btn btn-secondary" disabled>授权USDT</button>
+                            <div id="step2-status" class="step-status pending">等待授权</div>
+                        </div>
+                    </div>
+                    <div class="step" id="step-settle">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3>结算支付</h3>
+                            <p>在区块链上完成支付</p>
+                            <button id="settle-payment" class="btn btn-primary" disabled>结算支付</button>
+                            <div id="step3-status" class="step-status pending">等待结算</div>
+                        </div>
+                    </div>
+                </div>
+                <div id="blockchain-result" class="hidden">
+                    <h3>结算结果</h3>
+                    <div class="info-row">
+                        <label>交易哈希：</label>
+                        <a id="tx-hash" href="#" target="_blank">-</a>
+                    </div>
+                    <div class="info-row">
+                        <label>状态：</label>
+                        <span id="tx-status">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="payment-success" class="card hidden">
+            <div class="success-message">
+                <svg viewBox="0 0 24 24" width="64" height="64" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="success-icon">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <h2>支付成功！</h2>
+                <p>您的支付已成功处理。</p>
+                <div class="payment-details">
+                    <div class="info-row">
+                        <label>支付ID：</label>
+                        <span id="success-payment-id">-</span>
+                    </div>
+                    <div class="info-row">
+                        <label>金额：</label>
+                        <span id="success-amount">-</span>
+                    </div>
+                    <div class="info-row">
+                        <label>结算方式：</label>
+                        <span id="success-method">-</span>
+                    </div>
+                </div>
+                <button id="back-to-dashboard" class="btn btn-primary">返回仪表板</button>
+            </div>
+        </div>
+        
+        <!-- 支付取消状态 -->
+        <div id="payment-cancelled" class="card hidden">
+            <div class="cancelled-message">
+                <svg viewBox="0 0 24 24" width="64" height="64" stroke="#e74c3c" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="cancelled-icon">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+                <h2>支付已取消</h2>
+                <p>您的支付已被取消。</p>
+                <div class="payment-details">
+                    <div class="info-row">
+                        <label>支付ID：</label>
+                        <span id="cancelled-payment-id">-</span>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button id="retry-payment" class="btn btn-primary">重新支付</button>
+                    <button id="back-from-cancel" class="btn btn-secondary">返回仪表板</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="js/contract.js"></script>
+    <script src="js/payment.js"></script>
+</body>
+</html> 

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PayPal交易监控 - UnitPay</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stat-card h3 {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #2c3e50;
+        }
+        .transactions-table {
+            width: 100%;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .transactions-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .transactions-table th,
+        .transactions-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        .transactions-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #666;
+        }
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .refresh-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .refresh-btn:hover {
+            background: #0056b3;
+        }
+        .date-filter {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .date-filter input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .error-log {
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .error-log h2 {
+            color: #dc3545;
+            margin-top: 0;
+        }
+        .error-entry {
+            border-left: 3px solid #dc3545;
+            padding: 10px;
+            margin: 10px 0;
+            background: #f8f9fa;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .loading::after {
+            content: "加载中...";
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>PayPal交易监控</h1>
+            <button class="refresh-btn" onclick="refreshDashboard()">
+                <span class="refresh-icon">↻</span> 刷新数据
+            </button>
+        </div>
+
+        <div class="date-filter">
+            <input type="date" id="start-date" onchange="filterTransactions()">
+            <span>至</span>
+            <input type="date" id="end-date" onchange="filterTransactions()">
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>今日交易总额</h3>
+                <div class="value" id="today-amount">$0.00</div>
+            </div>
+            <div class="stat-card">
+                <h3>今日交易笔数</h3>
+                <div class="value" id="today-count">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>成功率</h3>
+                <div class="value" id="success-rate">0%</div>
+            </div>
+            <div class="stat-card">
+                <h3>平均处理时间</h3>
+                <div class="value" id="avg-process-time">0分钟</div>
+            </div>
+        </div>
+
+        <div class="transactions-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>交易ID</th>
+                        <th>金额</th>
+                        <th>用户钱包地址</th>
+                        <th>LP钱包地址</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="transactions-body">
+                    <!-- 交易数据将通过JavaScript动态填充 -->
+                </tbody>
+            </table>
+            <div class="loading" id="loading-indicator"></div>
+        </div>
+
+        <div class="error-log">
+            <h2>错误日志</h2>
+            <div id="error-log-content">
+                <!-- 错误日志将通过JavaScript动态填充 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化仪表板
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDashboard();
+        });
+
+        // 初始化函数
+        async function initializeDashboard() {
+            // 设置默认日期范围
+            setDefaultDateRange();
+            // 加载初始数据
+            await refreshDashboard();
+        }
+
+        // 设置默认日期范围（今天和前30天）
+        function setDefaultDateRange() {
+            const today = new Date();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+
+            document.getElementById('end-date').value = formatDate(today);
+            document.getElementById('start-date').value = formatDate(thirtyDaysAgo);
+        }
+
+        // 刷新仪表板数据
+        async function refreshDashboard() {
+            showLoading(true);
+            try {
+                // 获取交易统计
+                await updateTransactionStats();
+                // 获取交易列表
+                await updateTransactionList();
+                // 获取错误日志
+                await updateErrorLog();
+            } catch (error) {
+                console.error('刷新仪表板失败:', error);
+                showError('刷新数据失败，请稍后重试');
+            }
+            showLoading(false);
+        }
+
+        // 更新交易统计
+        async function updateTransactionStats() {
+            try {
+                const response = await fetch('/api/payment/paypal/stats');
+                const stats = await response.json();
+
+                document.getElementById('today-amount').textContent = 
+                    formatCurrency(stats.todayAmount);
+                document.getElementById('today-count').textContent = 
+                    stats.todayCount;
+                document.getElementById('success-rate').textContent = 
+                    `${(stats.successRate * 100).toFixed(1)}%`;
+                document.getElementById('avg-process-time').textContent = 
+                    `${stats.avgProcessTime}分钟`;
+            } catch (error) {
+                console.error('获取交易统计失败:', error);
+                showError('获取交易统计失败');
+            }
+        }
+
+        // 更新交易列表
+        async function updateTransactionList() {
+            try {
+                const startDate = document.getElementById('start-date').value;
+                const endDate = document.getElementById('end-date').value;
+
+                const response = await fetch(
+                    `/api/payment/paypal/transactions?startDate=${startDate}&endDate=${endDate}`
+                );
+                const transactions = await response.json();
+
+                const tbody = document.getElementById('transactions-body');
+                tbody.innerHTML = '';
+
+                transactions.forEach(tx => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${tx.id}</td>
+                        <td>${formatCurrency(tx.amount)}</td>
+                        <td>${shortenAddress(tx.userWalletAddress)}</td>
+                        <td>${shortenAddress(tx.lpWalletAddress)}</td>
+                        <td><span class="status-badge status-${tx.status.toLowerCase()}">${getStatusText(tx.status)}</span></td>
+                        <td>${formatDateTime(tx.createdAt)}</td>
+                        <td>
+                            <button onclick="viewDetails('${tx.id}')" class="btn-link">查看详情</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('获取交易列表失败:', error);
+                showError('获取交易列表失败');
+            }
+        }
+
+        // 更新错误日志
+        async function updateErrorLog() {
+            try {
+                const response = await fetch('/api/payment/paypal/error-log');
+                const errors = await response.json();
+
+                const logContent = document.getElementById('error-log-content');
+                logContent.innerHTML = '';
+
+                errors.forEach(error => {
+                    const entry = document.createElement('div');
+                    entry.className = 'error-entry';
+                    entry.innerHTML = `
+                        <div><strong>时间:</strong> ${formatDateTime(error.timestamp)}</div>
+                        <div><strong>类型:</strong> ${error.type}</div>
+                        <div><strong>消息:</strong> ${error.message}</div>
+                    `;
+                    logContent.appendChild(entry);
+                });
+            } catch (error) {
+                console.error('获取错误日志失败:', error);
+                showError('获取错误日志失败');
+            }
+        }
+
+        // 查看交易详情
+        function viewDetails(txId) {
+            window.location.href = `/payment-detail.html?id=${txId}`;
+        }
+
+        // 工具函数
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD'
+            }).format(amount);
+        }
+
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function formatDateTime(dateStr) {
+            return new Date(dateStr).toLocaleString();
+        }
+
+        function shortenAddress(address) {
+            if (!address) return '-';
+            return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'created': '已创建',
+                'processing': '处理中',
+                'completed': '已完成',
+                'failed': '失败',
+                'refunded': '已退款'
+            };
+            return statusMap[status] || status;
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading-indicator').style.display = 
+                show ? 'block' : 'none';
+        }
+
+        function showError(message) {
+            // 可以添加一个错误提示UI组件
+            alert(message);
+        }
+
+        // 过滤交易
+        function filterTransactions() {
+            updateTransactionList();
+        }
+    </script>
+</body>
+</html>

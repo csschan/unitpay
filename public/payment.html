@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UnitPay - 支付测试</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .payment-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .platform-select {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .platform-option {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .platform-option.selected {
+            background-color: #007bff;
+            color: white;
+            border-color: #0056b3;
+        }
+        .qr-test-section {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .qr-code-display {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-primary:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        .error-message {
+            color: #dc3545;
+            margin-top: 5px;
+        }
+        .success-message {
+            color: #28a745;
+            margin-top: 5px;
+        }
+        .success-container {
+            margin-top: 30px;
+        }
+        .success-box {
+            background-color: #f8fff9;
+            border: 1px solid #d1e7dd;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+        }
+        .success-icon {
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+        .success-box h3 {
+            color: #155724;
+            margin-bottom: 10px;
+        }
+        .payment-info-box {
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .info-item {
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .success-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="payment-container">
+        <h1>UnitPay 支付测试</h1>
+        
+        <div class="form-group">
+            <label for="walletAddress">钱包地址</label>
+            <input type="text" id="walletAddress" placeholder="输入以太坊钱包地址">
+        </div>
+
+        <div class="form-group">
+            <label for="amount">支付金额</label>
+            <input type="number" id="amount" placeholder="输入支付金额" step="0.01" min="0">
+        </div>
+
+        <div class="form-group">
+            <label for="platform">支付平台</label>
+            <select class="form-control" id="platform" name="platform" required>
+                <option value="">请选择支付平台</option>
+                <option value="WeChat">微信支付</option>
+                <option value="Alipay">支付宝</option>
+                <option value="GCash">GCash</option>
+                <option value="PayPal">PayPal</option>
+                <option value="Other">其他</option>
+            </select>
+        </div>
+
+        <!-- 商家PayPal邮箱输入字段 -->
+        <div class="form-group" id="merchant-paypal-email-container" style="display:none;">
+            <label for="merchant-paypal-email">商家PayPal邮箱</label>
+            <input type="email" class="form-control" id="merchant-paypal-email" placeholder="example@example.com" readonly>
+            <small class="text-muted">此邮箱将从支付二维码中自动识别，无需手动填写</small>
+        </div>
+
+        <!-- LP 选择区域 -->
+        <div class="form-group">
+            <label for="lp">选择 LP</label>
+            <select class="form-control" id="lp" name="lp" required>
+                <option value="">请选择 LP</option>
+            </select>
+            <div class="alert alert-warning mt-2" role="alert">
+                <strong>注意：</strong> 当前合约版本必须选择特定LP，不支持自动匹配功能。请从列表中选择一个LP。
+            </div>
+        </div>
+
+        <!-- LP 信息显示区域 -->
+        <div id="lp-info" class="payment-info-box hidden">
+            <div class="info-item">
+                <span>LP 地址：</span>
+                <strong id="lp-address"></strong>
+            </div>
+            <div class="info-item">
+                <span>当前汇率：</span>
+                <strong id="lp-rate"></strong>
+            </div>
+        </div>
+
+        <!-- USDT 余额显示区域 -->
+        <div id="usdt-balance" class="payment-info-box">
+            <div class="info-item">
+                <span>USDT 余额：</span>
+                <strong id="usdt-balance-amount"></strong>
+            </div>
+        </div>
+
+        <!-- 授权和锁定按钮 -->
+        <div class="form-group">
+            <button class="btn btn-primary" id="approveBtn" onclick="approveUSDT()">授权 USDT</button>
+            <button class="btn btn-primary" id="lockBtn" onclick="lockUSDT()" disabled>锁定 USDT</button>
+        </div>
+
+        <div class="form-group">
+            <label for="description">支付描述</label>
+            <textarea id="description" placeholder="输入支付描述"></textarea>
+        </div>
+
+        <div class="qr-test-section">
+            <h3>二维码测试</h3>
+            <div class="form-group">
+                <label for="qrCodeContent">二维码内容</label>
+                <textarea id="qrCodeContent" placeholder="输入或粘贴二维码内容"></textarea>
+            </div>
+            <div class="qr-code-display" id="qrCodeDisplay">
+                <!-- 这里将显示二维码 -->
+            </div>
+            <button class="btn btn-secondary" onclick="generateTestQR()">生成测试二维码</button>
+        </div>
+
+        <div class="form-group">
+            <button class="btn btn-primary" id="createPaymentBtn">创建支付</button>
+        </div>
+
+        <div id="message"></div>
+
+        <!-- 支付创建成功消息 -->
+        <div id="payment-success" class="success-container hidden">
+            <div class="success-box">
+                <div class="success-icon">
+                    <svg viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                </div>
+                <h3>支付创建成功！</h3>
+                <p>您的支付已成功创建，请点击下面的链接查看详情</p>
+                <div class="payment-info-box">
+                    <div class="info-item">
+                        <span>支付ID：</span>
+                        <strong id="success-payment-id"></strong>
+                    </div>
+                    <div class="info-item">
+                        <span>金额：</span>
+                        <strong id="success-amount"></strong>
+                    </div>
+                </div>
+                <div class="success-actions">
+                    <a id="view-payment-link" class="btn btn-primary" href="#">查看支付详情</a>
+                    <button class="btn btn-secondary" onclick="resetForm()">创建新支付</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+    <script>
+        // 连接Socket.io
+        const socket = io();
+        
+        // 平台选择
+        const platformOptions = document.querySelectorAll('.platform-option');
+        let selectedPlatform = '';
+        
+        platformOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                platformOptions.forEach(opt => opt.classList.remove('selected'));
+                option.classList.add('selected');
+                selectedPlatform = option.dataset.platform;
+                document.getElementById('selectedPlatform').value = selectedPlatform;
+                console.log('Selected platform:', selectedPlatform);
+            });
+        });
+
+        // 平台选择事件监听
+        document.getElementById('platform').addEventListener('change', function() {
+            const paypalEmailContainer = document.getElementById('merchant-paypal-email-container');
+            if (this.value === 'PayPal') {
+                paypalEmailContainer.style.display = 'block';
+            } else {
+                paypalEmailContainer.style.display = 'none';
+            }
+        });
+
+        // 生成测试二维码
+        function generateTestQR() {
+            const platform = document.getElementById('platform').value || 'WeChat';
+            const amount = document.getElementById('amount').value;
+            if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+                showMessage('请先输入有效的支付金额', 'error');
+                return;
+            }
+
+            console.log('生成测试QR码，选择的平台:', platform);
+
+            // 平台代码映射
+            const platformMap = {
+                'WeChat': 'W',
+                'Alipay': 'A',
+                'GCash': 'G',
+                'PayPal': 'P'
+            };
+            
+            // 使用简化格式的数据
+            const testData = {
+                p: platformMap[platform],  // 使用映射后的简写代码
+                m: 'TEST_MERCHANT_' + Date.now(),
+                n: '测试商户',
+                a: 'TEST_ACCOUNT_' + Date.now(),
+                v: parseFloat(amount).toFixed(2)
+            };
+            
+            console.log('测试数据对象 (添加email前):', JSON.stringify(testData));
+            
+            // 如果是PayPal，添加邮箱
+            if (platform === 'PayPal') {
+                const testEmail = 'test_merchant@example.com';
+                testData.paypalEmail = testEmail;  // 统一使用paypalEmail字段
+                console.log('添加PayPal测试邮箱:', testEmail);
+            }
+            
+            console.log('最终测试数据对象:', JSON.stringify(testData));
+            
+            // 转换为JSON字符串
+            const qrContent = JSON.stringify(testData);
+            console.log('生成的二维码数据:', qrContent);
+            
+            document.getElementById('qrCodeContent').value = qrContent;
+            
+            // 解析二维码内容并自动填充表单
+            parseQRContent(qrContent);
+            
+            // 清除旧的二维码
+            const qrDisplay = document.getElementById('qrCodeDisplay');
+            qrDisplay.innerHTML = '';
+            
+            // 显示二维码
+            QRCode.toCanvas(qrDisplay, qrContent, {
+                width: 200,
+                margin: 1,
+                color: {
+                    dark: '#000000',
+                    light: '#ffffff'
+                }
+            }, function(error) {
+                if (error) {
+                    console.error('生成二维码失败:', error);
+                    showMessage('生成二维码失败', 'error');
+                }
+            });
+        }
+        
+        // 解析二维码内容
+        function parseQRContent(content) {
+            try {
+                console.log('开始解析QR码内容:', content);
+                
+                let platform = '';
+                let amount = null;
+                let paypalEmail = null;
+                
+                // 尝试解析JSON
+                if (content.startsWith('{') && content.endsWith('}')) {
+                    const data = JSON.parse(content);
+                    console.log('解析的JSON数据 (原始):', data);
+                    
+                    // 调试: 列出所有字段和值
+                    for (const key in data) {
+                        console.log(`字段 ${key} = ${data[key]}`);
+                    }
+                    
+                    // 统一使用paypalEmail字段 - 增加检查a字段的逻辑
+                    if (platform === 'PayPal' || data.p === 'P') {
+                        // 如果是PayPal平台，并且a字段看起来像邮箱地址，使用它作为PayPal邮箱
+                        if (data.a && data.a.includes('@') && data.a.includes('.')) {
+                            paypalEmail = data.a;
+                            console.log('从a字段中识别到PayPal邮箱:', paypalEmail);
+                        } else {
+                            paypalEmail = data.paypalEmail || data.email || data.merchantEmail || null;
+                        }
+                    } else {
+                        paypalEmail = data.paypalEmail || data.email || data.merchantEmail || null;
+                    }
+                    
+                    console.log('找到的PayPal邮箱:', paypalEmail, '来源字段:', 
+                        data.a && data.a.includes('@') ? 'a' :
+                        data.paypalEmail ? 'paypalEmail' : 
+                        data.email ? 'email' : 
+                        data.merchantEmail ? 'merchantEmail' : '无');
+                    
+                    if (data.v) {
+                        amount = parseFloat(data.v);
+                    }
+                    
+                    // 平台代码转换
+                    const platformMap = {
+                        'W': 'WeChat',
+                        'A': 'Alipay',
+                        'G': 'GCash',
+                        'P': 'PayPal'
+                    };
+                    
+                    if (data.p && platformMap[data.p]) {
+                        platform = platformMap[data.p];
+                    }
+                    
+                    // 如果找到了邮箱但没有平台信息，默认为PayPal
+                    if (paypalEmail && !platform) {
+                        platform = 'PayPal';
+                    }
+                } else if (content.startsWith('http')) {
+                    // URL格式解析
+                    try {
+                        const url = new URL(content);
+                        
+                        // 先提取邮箱
+                        paypalEmail = url.searchParams.get('paypalEmail') ||
+                                    url.searchParams.get('receiver') ||
+                                    url.searchParams.get('merchantEmail') ||
+                                    url.searchParams.get('paypal_email');
+                        
+                        // 提取金额
+                        const amountParam = url.searchParams.get('amount') || 
+                                         url.searchParams.get('value') ||
+                                         url.searchParams.get('price');
+                        if (amountParam) {
+                            amount = parseFloat(amountParam);
+                        }
+                        
+                        // 检测平台
+                        if (content.includes('paypal.com') || paypalEmail) {
+                            platform = 'PayPal';
+                        } else if (content.includes('gcash.com')) {
+                            platform = 'GCash';
+                        } else if (content.includes('alipay.com')) {
+                            platform = 'Alipay';
+                        } else if (content.includes('wechat.com')) {
+                            platform = 'WeChat';
+                        }
+                    } catch (e) {
+                        console.error('解析URL失败:', e);
+                    }
+                } else {
+                    // 尝试直接提取邮箱格式
+                    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+                    const emailMatch = content.match(emailRegex);
+                    if (emailMatch) {
+                        paypalEmail = emailMatch[0];
+                        platform = 'PayPal';  // 如果找到邮箱，设置为PayPal平台
+                    }
+                }
+                
+                console.log('解析结果:', { platform, amount, paypalEmail });
+                
+                // 填充表单 - 先设置平台
+                if (platform) {
+                    const platformSelect = document.getElementById('platform');
+                    platformSelect.value = platform;
+                    platformSelect.dispatchEvent(new Event('change'));
+                }
+                
+                // 填充金额
+                if (amount && !isNaN(amount)) {
+                    document.getElementById('amount').value = amount.toFixed(2);
+                }
+                
+                // 填充PayPal邮箱 - 不需要再次检查平台
+                if (paypalEmail) {
+                    const emailInput = document.getElementById('merchant-paypal-email');
+                    if (emailInput) {
+                        emailInput.value = paypalEmail;
+                        console.log('已自动填充PayPal邮箱:', paypalEmail);
+                    }
+                }
+            } catch (error) {
+                console.error('解析二维码内容失败:', error);
+            }
+        }
+
+        // 创建支付
+        async function createPayment() {
+            if (window.createPaymentInProgress) return;
+            window.createPaymentInProgress = true;
+            const createPaymentBtn = document.getElementById('createPaymentBtn');
+            createPaymentBtn.disabled = true;
+            createPaymentBtn.textContent = '创建中...';
+            
+            try {
+                const walletAddress = document.getElementById('walletAddress').value;
+                const amount = document.getElementById('amount').value;
+                const platform = document.getElementById('platform').value;
+                const qrCodeContent = document.getElementById('qrCodeContent').value;
+                const description = document.getElementById('description').value;
+                
+                // 验证输入
+                if (!walletAddress || !amount) {
+                    showMessage('请填写钱包地址和支付金额', 'error');
+                    createPaymentBtn.disabled = false;
+                    createPaymentBtn.textContent = '创建支付';
+                    return;
+                }
+                
+                if (!platform && !qrCodeContent) {
+                    showMessage('请选择支付平台或提供二维码内容', 'error');
+                    createPaymentBtn.disabled = false;
+                    createPaymentBtn.textContent = '创建支付';
+                    return;
+                }
+                
+                // 验证钱包地址格式
+                if (!/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
+                    showMessage('无效的以太坊钱包地址', 'error');
+                    createPaymentBtn.disabled = false;
+                    createPaymentBtn.textContent = '创建支付';
+                    return;
+                }
+                
+                // 验证金额
+                const parsedAmount = parseFloat(amount);
+                if (isNaN(parsedAmount) || parsedAmount <= 0) {
+                    showMessage('无效的支付金额，金额必须大于0', 'error');
+                    createPaymentBtn.disabled = false;
+                    createPaymentBtn.textContent = '创建支付';
+                    return;
+                }
+                
+                // 构建支付数据
+                const paymentData = {
+                    walletAddress: walletAddress,
+                    amount: parsedAmount,
+                    platform: platform,
+                    description: description || '测试支付'
+                };
+                
+                // 如果有二维码内容，添加到支付数据
+                if (qrCodeContent) {
+                    paymentData.qrContent = qrCodeContent;
+                }
+                
+                // 如果是PayPal平台，添加商家PayPal邮箱
+                if (platform === 'PayPal') {
+                    const merchantPaypalEmail = document.getElementById('merchant-paypal-email').value;
+                    if (merchantPaypalEmail) {
+                        paymentData.merchantPaypalEmail = merchantPaypalEmail;
+                    } else {
+                        showMessage('PayPal支付需要商家PayPal邮箱', 'error');
+                        createPaymentBtn.disabled = false;
+                        createPaymentBtn.textContent = '创建支付';
+                        return;
+                    }
+                }
+                
+                // 发送API请求创建支付
+                const response = await fetch('/api/payment-intents', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(paymentData)
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || '创建支付失败');
+                }
+                
+                const responseData = await response.json();
+                console.log('支付创建成功:', responseData);
+                
+                // 立即跳转到支付详情页
+                window.location.href = `/payment-detail?id=${responseData.data.id}`;
+            } catch (error) {
+                console.error('创建支付错误:', error);
+                window.createPaymentInProgress = false;
+                showMessage(error.message || '创建支付失败，请重试', 'error');
+                createPaymentBtn.disabled = false;
+                createPaymentBtn.textContent = '创建支付';
+            }
+        }
+        
+        // 重置表单
+        function resetForm() {
+            // 显示表单
+            document.querySelector('.payment-container').querySelectorAll('div.form-group, div.qr-test-section').forEach(el => {
+                el.style.display = 'block';
+            });
+            
+            // 重置表单字段
+            document.getElementById('walletAddress').value = '';
+            document.getElementById('amount').value = '';
+            document.getElementById('platform').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('qrCodeContent').value = '';
+            
+            // 清除二维码显示
+            document.getElementById('qrCodeDisplay').innerHTML = '';
+            
+            // 隐藏成功界面
+            document.getElementById('payment-success').classList.add('hidden');
+            
+            // 重置按钮
+            document.getElementById('createPaymentBtn').disabled = false;
+            document.getElementById('createPaymentBtn').textContent = '创建支付';
+        }
+
+        // 显示消息
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = message;
+            messageDiv.className = type + '-message';
+        }
+        
+        // 初始化事件监听器
+        function initEventListeners() {
+            // 监听二维码内容输入框变更
+            document.getElementById('qrCodeContent').addEventListener('input', function() {
+                const content = this.value.trim();
+                if (content) {
+                    parseQRContent(content);
+                }
+            });
+            
+            // 监听支付平台选择变更
+            document.getElementById('platform').addEventListener('change', function() {
+                const paypalEmailContainer = document.getElementById('merchant-paypal-email-container');
+                if (paypalEmailContainer) {
+                    if (this.value === 'PayPal') {
+                        paypalEmailContainer.style.display = 'block';
+                    } else {
+                        paypalEmailContainer.style.display = 'none';
+                    }
+                }
+            });
+        }
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initEventListeners();
+            
+            // 触发初始状态
+            document.getElementById('platform').dispatchEvent(new Event('change'));
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>USDT授权</title>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .status.error {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        .status.success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        .network-info {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>USDT授权工具</h1>
+        <div class="network-info">
+            <p>RPC节点: <input type="text" id="rpc-endpoint" value="https://somnia.rpc.thirdweb.com" style="width: 300px;">
+            <button id="switch-rpc">切换RPC</button></p>
+        </div>
+        <div>
+            <p>当前网络: <span id="network">-</span></p>
+            <p>钱包地址: <span id="wallet-address">未连接</span></p>
+            <p>USDT余额: <span id="balance">-</span> USDT</p>
+            <p>当前授权额度: <span id="current-allowance">-</span> USDT</p>
+        </div>
+        <div>
+            <button id="connect-wallet">连接钱包</button>
+            <button id="approve" disabled>授权100万USDT</button>
+            <button id="check-balance" disabled>刷新余额</button>
+        </div>
+        <div id="status" class="status" style="display: none;"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.5.2/web3.min.js"></script>
+    <script src="/js/wallet-connector.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+        // 合约配置
+        const contractConfig = {
+            somnia: {
+                CHAIN_ID: '0x7d9',
+                CHAIN_NAME: 'Somnia',
+                RPC_URL: 'https://somnia.rpc.thirdweb.com',
+                BLOCK_EXPLORER: 'https://somnia.rpc.thirdweb.com',
+                USDT_ADDRESS: '0xa3EF117d0680EF025e99E09f44c0f6a5CafE141b',
+                ESCROW_ADDRESS: '0x8379D68683272C534F29B300AECf8abAb76064F7'
+            }
+        };
+
+        // USDT ABI
+        const USDT_ABI = [
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "name",
+                "outputs": [{"name": "", "type": "string"}],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "symbol",
+                "outputs": [{"name": "", "type": "string"}],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "decimals",
+                "outputs": [{"name": "", "type": "uint8"}],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [{"name": "_owner", "type": "address"}],
+                "name": "balanceOf",
+                "outputs": [{"name": "balance", "type": "uint256"}],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [{"name": "_owner", "type": "address"}, {"name": "_spender", "type": "address"}],
+                "name": "allowance",
+                "outputs": [{"name": "", "type": "uint256"}],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "constant": false,
+                "inputs": [{"name": "_spender", "type": "address"}, {"name": "_value", "type": "uint256"}],
+                "name": "approve",
+                "outputs": [{"name": "", "type": "bool"}],
+                "payable": false,
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ];
+
+        let web3;
+        let usdtContract;
+        let walletAddress;
+
+        // 显示状态信息
+        function showStatus(message, type = 'success') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+            statusDiv.style.display = 'block';
+        }
+
+        // 更新余额和授权额度
+        async function updateBalanceAndAllowance() {
+            try {
+                if (!walletAddress || !usdtContract) {
+                    throw new Error('请先连接钱包');
+                }
+
+                // 获取USDT余额
+                const balance = await usdtContract.methods.balanceOf(walletAddress).call();
+                const balanceInEther = web3.utils.fromWei(balance, 'ether');
+                document.getElementById('balance').textContent = balanceInEther;
+
+                // 获取授权额度
+                const allowance = await usdtContract.methods.allowance(
+                    walletAddress,
+                    contractConfig.somnia.ESCROW_ADDRESS
+                ).call();
+                const allowanceInEther = web3.utils.fromWei(allowance, 'ether');
+                document.getElementById('current-allowance').textContent = allowanceInEther;
+
+                showStatus('余额和授权信息更新成功', 'success');
+            } catch (error) {
+                console.error('更新余额和授权失败:', error);
+                showStatus('更新余额和授权失败: ' + error.message, 'error');
+            }
+        }
+
+        // 连接钱包
+        async function connectWallet() {
+            try {
+                if (!window.ethereum) {
+                    throw new Error('请安装MetaMask钱包');
+                }
+
+                // 请求连接钱包
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                walletAddress = accounts[0];
+                document.getElementById('wallet-address').textContent = walletAddress;
+
+                // 初始化Web3
+                web3 = new Web3(window.ethereum);
+
+                // 检查网络
+                const chainId = await web3.eth.getChainId();
+                if (chainId.toString(16) !== contractConfig.somnia.CHAIN_ID.replace('0x', '')) {
+                    // 切换到Somnia网络
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: contractConfig.somnia.CHAIN_ID }],
+                        });
+                    } catch (switchError) {
+                        // 如果网络不存在，添加网络
+                        if (switchError.code === 4902) {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [{
+                                    chainId: contractConfig.somnia.CHAIN_ID,
+                                    chainName: contractConfig.somnia.CHAIN_NAME,
+                                    rpcUrls: [contractConfig.somnia.RPC_URL],
+                                    blockExplorerUrls: [contractConfig.somnia.BLOCK_EXPLORER],
+                                }],
+                            });
+                        } else {
+                            throw switchError;
+                        }
+                    }
+                }
+
+                // 初始化USDT合约
+                usdtContract = new web3.eth.Contract(USDT_ABI, contractConfig.somnia.USDT_ADDRESS);
+
+                // 更新网络信息
+                document.getElementById('network').textContent = contractConfig.somnia.CHAIN_NAME;
+
+                // 启用按钮
+                document.getElementById('approve').disabled = false;
+                document.getElementById('check-balance').disabled = false;
+
+                // 更新余额和授权信息
+                await updateBalanceAndAllowance();
+
+                showStatus('钱包连接成功', 'success');
+            } catch (error) {
+                console.error('连接钱包失败:', error);
+                showStatus('连接钱包失败: ' + error.message, 'error');
+            }
+        }
+
+        // 授权USDT
+        async function approveUSDT() {
+            try {
+                if (!walletAddress || !usdtContract) {
+                    throw new Error('请先连接钱包');
+                }
+
+                const amount = web3.utils.toWei('1000000', 'ether'); // 100万USDT
+                const tx = await usdtContract.methods.approve(
+                    contractConfig.somnia.ESCROW_ADDRESS,
+                    amount
+                ).send({ from: walletAddress });
+
+                showStatus('授权成功，交易哈希: ' + tx.transactionHash, 'success');
+                
+                // 更新授权额度
+                await updateBalanceAndAllowance();
+            } catch (error) {
+                console.error('授权失败:', error);
+                showStatus('授权失败: ' + error.message, 'error');
+            }
+        }
+
+        // 切换RPC
+        async function switchRPC() {
+            try {
+                const newRPC = document.getElementById('rpc-endpoint').value;
+                if (!newRPC) {
+                    throw new Error('请输入有效的RPC地址');
+                }
+
+                // 更新配置
+                contractConfig.somnia.RPC_URL = newRPC;
+
+                // 如果已连接钱包，重新初始化
+                if (web3 && walletAddress) {
+                    web3 = new Web3(new Web3.providers.HttpProvider(newRPC));
+                    usdtContract = new web3.eth.Contract(USDT_ABI, contractConfig.somnia.USDT_ADDRESS);
+                    await updateBalanceAndAllowance();
+                }
+
+                showStatus('RPC切换成功', 'success');
+            } catch (error) {
+                console.error('切换RPC失败:', error);
+                showStatus('切换RPC失败: ' + error.message, 'error');
+            }
+        }
+
+        // 添加事件监听
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('connect-wallet').addEventListener('click', connectWallet);
+            document.getElementById('approve').addEventListener('click', approveUSDT);
+            document.getElementById('check-balance').addEventListener('click', updateBalanceAndAllowance);
+            document.getElementById('switch-rpc').addEventListener('click', switchRPC);
+
+            // 监听钱包事件
+            if (window.ethereum) {
+                window.ethereum.on('accountsChanged', function (accounts) {
+                    if (accounts.length === 0) {
+                        // 用户断开了钱包连接
+                        walletAddress = null;
+                        document.getElementById('wallet-address').textContent = '未连接';
+                        document.getElementById('balance').textContent = '-';
+                        document.getElementById('current-allowance').textContent = '-';
+                        document.getElementById('approve').disabled = true;
+                        document.getElementById('check-balance').disabled = true;
+                        showStatus('钱包已断开连接', 'error');
+                    } else {
+                        // 用户切换了账户
+                        walletAddress = accounts[0];
+                        document.getElementById('wallet-address').textContent = walletAddress;
+                        updateBalanceAndAllowance();
+                    }
+                });
+
+                window.ethereum.on('chainChanged', function (chainId) {
+                    // 刷新页面
+                    window.location.reload();
+                });
+            }
+        });
+    </script>
+</body>
+</html> 

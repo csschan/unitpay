@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LP Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+    <link href="css/solana-style.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <!-- Wallet Connection Section -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Wallet Connection</h5>
+                <div class="d-flex gap-2">
+                    <button id="connect-eth-wallet" class="btn btn-primary d-none">Connect Ethereum Wallet</button>
+                    <button id="connect-solana-wallet" class="btn btn-primary">Connect Solana Wallet</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- LP Registration Section -->
+        <div id="registration-section" style="display: none;">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">LP Registration</h5>
+                    <form id="register-form">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">LP Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="register-total-quota" class="form-label">Total Quota (USDC)</label>
+                            <input type="number" class="form-control" id="register-total-quota" name="total-quota" min="0" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="register-per-transaction-quota" class="form-label">Per-Transaction Quota (USDC)</label>
+                            <input type="number" class="form-control" id="register-per-transaction-quota" name="per-transaction-quota" min="0" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="register-fee-rate" class="form-label">Service Fee Rate (%)</label>
+                            <input type="number" class="form-control" id="register-fee-rate" name="fee-rate" min="0" max="100" step="0.01" value="0.5" required>
+                            <small class="form-text text-muted">Set your service fee percentage, e.g., 0.5 means 0.5%</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Supported Payment Platforms</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="platforms" value="PayPal" id="platform-paypal">
+                                <label class="form-check-label" for="platform-paypal">PayPal</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="platforms" value="GCash" id="platform-gcash">
+                                <label class="form-check-label" for="platform-gcash">GCash</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="platforms" value="Alipay" id="platform-alipay">
+                                <label class="form-check-label" for="platform-alipay">Alipay</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="platforms" value="WeChat" id="platform-wechat">
+                                <label class="form-check-label" for="platform-wechat">WeChat</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="platforms" value="Other" id="platform-other">
+                                <label class="form-check-label" for="platform-other">Other</label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Register</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- LP Info Section -->
+        <div id="lp-info-section" style="display: none;">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">LP Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Wallet Address:</strong> <span id="wallet-address"></span></p>
+                            <p><strong>LP Name:</strong> <span id="lp-name"></span></p>
+                            <p><strong>Email:</strong> <span id="lp-email"></span></p>
+                            <p>
+                                <strong>PayPal Email:</strong> 
+                                <span id="lp-paypal-email"></span>
+                                <button onclick="showPayPalEmailModal()" class="btn btn-sm btn-outline-primary ml-2">Update PayPal Email</button>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Total Quota:</strong> <span id="display-total-quota"></span> USDC</p>
+                            <p><strong>Per-Transaction Quota:</strong> <span id="display-per-transaction-quota"></span> USDC</p>
+                            <p><strong>Locked Quota:</strong> <span id="locked-quota"></span> USDC</p>
+                            <p><strong>Available Quota:</strong> <span id="available-quota"></span> USDC</p>
+                            <p><strong>Paid Quota:</strong> <span id="paid-quota">0</span> USDC</p>
+                            <p><strong>Service Fee Rate:</strong> <span id="display-fee-rate"></span>%</p>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="paypal-email" class="form-label">PayPal Email</label>
+                                <input type="email" class="form-control" id="paypal-email" placeholder="Enter your PayPal email">
+                            </div>
+                            <button id="connect-paypal" class="btn btn-primary">Link PayPal Account</button>
+                        </div>
+                        <div class="col-md-6">
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#update-quota-modal">Update Info</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task Pool Section -->
+        <div id="dashboard-section" style="display: none;">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Task Pool</h5>
+                    
+                    <!-- Task Status Tabs -->
+                    <ul class="nav nav-tabs mb-3" id="taskTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="created-tasks-tab" data-bs-toggle="tab" data-task-status="created" type="button" role="tab" aria-selected="true">Available Tasks</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="claimed-tasks-tab" data-bs-toggle="tab" data-task-status="claimed" type="button" role="tab" aria-selected="false">Claimed Tasks</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="paid-tasks-tab" data-bs-toggle="tab" data-task-status="paid" type="button" role="tab" aria-selected="false">Paid Tasks</button>
+                        </li>
+                    </ul>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="platform-filter" class="form-label">Platform</label>
+                            <select class="form-select" id="platform-filter">
+                                <option value="">All</option>
+                                <option value="PayPal">PayPal</option>
+                                <option value="GCash">GCash</option>
+                                <option value="Alipay">Alipay</option>
+                                <option value="WeChat">WeChat</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="amount-filter" class="form-label">Amount Range</label>
+                            <select class="form-select" id="amount-filter">
+                                <option value="">All</option>
+                                <option value="0-100">0-100 USDT</option>
+                                <option value="100-500">100-500 USDT</option>
+                                <option value="500-1000">500-1000 USDT</option>
+                                <option value="1000+">1000+ USDT</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="task-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Quota Modal -->
+    <div class="modal fade" id="update-quota-modal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Update LP Information</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="update-quota-form">
+                        <div class="mb-3">
+                            <label for="update-total-quota" class="form-label">Total Quota</label>
+                            <input type="number" class="form-control" id="update-total-quota" name="total-quota" min="0" step="0.01">
+                        </div>
+                        <div class="mb-3">
+                            <label for="update-per-transaction-quota" class="form-label">Per-Transaction Quota</label>
+                            <input type="number" class="form-control" id="update-per-transaction-quota" name="per-transaction-quota" min="0" step="0.01">
+                        </div>
+                        <div class="mb-3">
+                            <label for="update-fee-rate" class="form-label">Fee Rate (%)</label>
+                            <input type="number" class="form-control" id="update-fee-rate" name="fee-rate" min="0" max="100" step="0.01">
+                            <small class="form-text text-muted">Set your service fee percentage, e.g., 0.5 means 0.5%</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.6.1/dist/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script src="/js/config.js"></script>
+    <script src="/js/wallet-connector.js"></script>
+    <script src="/js/contract.js"></script>
+    <script src="https://unpkg.com/@solana/web3.js@1.98.2/lib/index.iife.js"></script>
+    <script src="/js/solana-integration.js"></script>
+    <script src="/js/lp.js"></script>
+</body>
+</html>
