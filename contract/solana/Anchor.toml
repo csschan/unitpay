@@ -1,0 +1,22 @@
+[features]
+seeds = false
+skip-lint = false
+
+[programs.devnet]
+unitpay_settlement = "E85PHXXkTgf9YjzNM3Wh9xKysWNx6hJKbwc7y9EuGxBh"
+
+[programs.testnet]
+unitpay_settlement = "E85PHXXkTgf9YjzNM3Wh9xKysWNx6hJKbwc7y9EuGxBh"
+
+[programs.localnet]
+unitpay_settlement = "E85PHXXkTgf9YjzNM3Wh9xKysWNx6hJKbwc7y9EuGxBh"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "testnet"
+wallet = "../../wallet-keypair.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts" 
