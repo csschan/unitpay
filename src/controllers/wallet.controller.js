@@ -3,8 +3,8 @@ const { Connection, PublicKey } = require('@solana/web3.js');
 const { Token, TOKEN_PROGRAM_ID } = require('@solana/spl-token');
 
 // Solana 网络配置
-const SOLANA_RPC_URL = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
-const USDT_TOKEN_ADDRESS = process.env.USDT_TOKEN_ADDRESS || '0xa3EF117d0680EF025e99E09f44c0f6a5CafE141b';
+const SOLANA_RPC_URL = process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
+const USDT_TOKEN_ADDRESS = process.env.USDT_TOKEN_ADDRESS || 'Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr';
 
 /**
  * 获取 Solana 钱包余额
@@ -37,7 +37,7 @@ exports.getSolanaBalance = async (req, res) => {
     const publicKey = new PublicKey(address);
     const solBalance = await connection.getBalance(publicKey);
     
-    // 获取 USDT 余额
+    // 获取 USDC 余额
     const tokenPublicKey = new PublicKey(USDT_TOKEN_ADDRESS);
     const tokenAccount = await connection.getTokenAccountsByOwner(publicKey, {
       mint: tokenPublicKey
