@@ -130,11 +130,8 @@ files.forEach(file => {
 });
 
 // 添加路由调试日志
-console.log('注册API路由...');
 console.log('API路由路径数量:', apiRoutes.stack ? apiRoutes.stack.length : 0);
 console.log('合约路由路径数量:', contractRoutes.stack ? contractRoutes.stack.length : 0);
-console.log('主要路由对象:', typeof mainRoutes);
-console.log('主要路由路径数量:', mainRoutes.stack ? mainRoutes.stack.length : 0);
 if (mainRoutes.stack) {
   console.log('主要路由详情:');
   mainRoutes.stack.forEach((layer, index) => {
