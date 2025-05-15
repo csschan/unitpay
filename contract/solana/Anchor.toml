@@ -3,13 +3,13 @@ seeds = false
 skip-lint = false
 
 [programs.devnet]
-unitpay_settlement = "E85PHXXkTgf9YjzNM3Wh9xKysWNx6hJKbwc7y9EuGxBh"
+unitpay_settlement = "8dnCh8oSEranGo7BcS3mH7hrp81T364g7NUpVCyuok8h"
 
 [programs.testnet]
-unitpay_settlement = "E85PHXXkTgf9YjzNM3Wh9xKysWNx6hJKbwc7y9EuGxBh"
+unitpay_settlement = "8dnCh8oSEranGo7BcS3mH7hrp81T364g7NUpVCyuok8h"
 
 [programs.localnet]
-unitpay_settlement = "E85PHXXkTgf9YjzNM3Wh9xKysWNx6hJKbwc7y9EuGxBh"
+unitpay_settlement = "8dnCh8oSEranGo7BcS3mH7hrp81T364g7NUpVCyuok8h"
 
 [registry]
 url = "https://api.apr.dev"
